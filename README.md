@@ -2,38 +2,27 @@
 A UWP App which will run on a RaspBerry Pi to control the height of an Ikea Bekant Standing Desk.
 
 # Hardware Interface
-Controlling the desk requires interfacing with the control hardware. Thankfully the desk has a very simple 3-wire control system which runs on 12V.
+Moving the desk requires interfacing with the control hardware. The control hardware is an overly complex digital control system that Ikea purchased from ROL Ergo. It uses the ROL Ergo iDrive system.
 
-From what I can tell, The Ikea Bekant Standing Desk Frame uses Molex Part Number 39-01-4031 (Digikey Part Number WM23608-ND) recepticles and Molex Part Number 39-01-4033 (Digikey part number WM23611-ND) plugs for the control electronic interconnections. The goal of this project is to build another plug-in module which can provide automated control of the standing desk electronics without interfering with the original manual controls.
+The Ikea Bekant Standing Desk Frame uses Molex Part Number 39-01-4031 (Digikey Part Number WM23608-ND) recepticles and Molex Part Number 39-01-4033 (Digikey part number WM23611-ND) plugs for the control electronic interconnections. The goal of this project is to build another plug-in module which can provide automated control of the standing desk electronics without interfering with the original manual controls.
 
 # Theory of Operation
-The standing desk does not contain any height sensing electronics as far as I can tell: it uses limit switches to prevent the desk from travelling higher than allowed or lower than allowed.
+The standing desk uses the ROL Ergo iDrive electronic control system. See: http://www.rolergo.com/products/control-systems/
 
-The control box is more complex than it looks. I initially thought the control box acted as a dumb switch that changed the direction of current flow based on which button was pressed, and that the saftey key was just an in-line citcuit breaker which would prevent the entire circuit from operating if it was removed. This doens't appear to be the case: I think the control box generates signal based on which switch is pressed which travels back down the wire loop to a set of relays. The signal may be a simple +/- voltage signal which is captured by a set of diodes, or it may actually be some sort of message transmitted down a single wire bus. I'm waiting on Molex connector hardware so that I can build a tap-in point without damaging my desk hardware.
+From the ROL Ergo product manuals, the standing desk electronics contain a "memory" of the height at which the desk was last set. Taking the electronics apart I discovered that there are no limit switches which control the table. Instead, I suspect that there are current sensors in the motor control electronics which detect when the motors are under high load. It uses this to detect the top and bottom of the table during homing and movement.
 
-I've poked around  I beleive the following pinout is correct:
+The entire table is deceptively complex. The standing desk leg units each have an iDrive circuit board in them, which contains a set of relays as well as an MCU. The legs that I have are stamped with "FW 3.8".
 
-Pin 1 (rounded): 24v DC (VERIFIED)
-Pin 2 (long square): System ground (Strongly suspected but not verified)
-Pin 3 (short square): Table Movement Control (Strongly suspected but not verified)
+I've poked around in the control boxes and I've worked out the pinout for the wires connecting the system:
 
-Pin 2 and 3 assumptions are based on the power supply: the power supply only has connections on Pin 1 and 2 and has no connection to Pin 3. This leads me to suspect that:
+Pin 1 (rounded): 24-34VDC
+Pin 2 (long square): System ground
+Pin 3 (short square): Table Movement Control
 
-- There is a continuous power bus which travels around the entire standing desk from the power supply, with Pin 1 being +24v and Pin 2 being ground
-- The table control signal has no effect on the power supply so Pin 3 is left empty on that connector
+All the wires loop around the desk to form a continuous bus. No matter where you plug the various elements in it is guaranteed to work since all the components share a common bus.
+
+The Table Movement Control pin is way more complex that I initially suspected. Using a basic multimeter I found that the pin floats ~9VDC during normal operation. It also seems to have ~3.3VAC, which seems to imply that there's some digital serial traffic flowing over that wire. I'll need to find an oscilloscope to really continue working on this project since the protocol looks way more complex that I originally though.
 
 # IoT Controller Design
 
-Based on this theory of operation, the RaspBerry Pi will sit in-line with the manual control panel. Normally, the Rasperry Pi will allow the manual controls to dictate how the table moves. When the Raspberry Pi is issued a table move command, it will:
-
-1. Isolate the manual controls from the system using a relay or other appropriate mechanism to prevent conflicts on the signal wire
-2. Move the table to the extreme limit of movement in the direction of travel to trip the limit switch. Ex: if we are moving to the standing position, move the table to maximum height
-3. Move the table in the oposite direction for N milliseconds to get the table to the correct height
-4. Engage the manual controls
-
-The Raspberry Pi must be able to detect when the manual controls are in use. This will be used to calibrate the user selected heights. To calibrate the table, the Raspberry Pi will:
-
-1. Isolate the manual controls.
-2. Move the table to the extreme limit of movement in the direction of travel to trip the limit switch.
-3. Engage the manual controls.
-4. Observe how long the user presses the manual controls to determine the correct height settings.
+TBD.
