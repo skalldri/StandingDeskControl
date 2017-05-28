@@ -16,12 +16,23 @@ The entire table is deceptively complex. The standing desk leg units each have a
 I've poked around in the control boxes and I've worked out the pinout for the wires connecting the system:
 
 Pin 1 (rounded): 24-34VDC
+
 Pin 2 (long square): System ground
+
 Pin 3 (short square): Table Movement Control
 
 All the wires loop around the desk to form a continuous bus. No matter where you plug the various elements in it is guaranteed to work since all the components share a common bus.
 
-The Table Movement Control pin is way more complex that I initially suspected. Using a basic multimeter I found that the pin floats ~9VDC during normal operation. It also seems to have ~3.3VAC, which seems to imply that there's some digital serial traffic flowing over that wire. I'll need to find an oscilloscope to really continue working on this project since the protocol looks way more complex that I originally though.
+# Table Movement Control Bus
+With an oscilloscope attached it's clear that the control bus is a digital signal of some kind. It's clearly a single wire serial protocol, though it doesn't match the expected waveforms of a 1-Wire compliant bus. The signal floats at 12v (voltage divider from power supply's 24v acting as the pullup) and the bus is active low at 1.6v.
+
+There's a "heartbeat" transmission which is being broadcast over the TMC bus at all times, even when the desk isn't moving. When the desk is moving, the heartbeat transmission doesn't visibly change.
+
+Each heartbeat transmission seems to be composed of multiple packets: a single, very long and complex packet followed by 7 small packets followed by another longer and more complex packet. This sequence then repeats.
+
+The "Start condition" for this bus seems to be ~680us of logic 0 (12v) followed by ~680us of logic 1 (1.6v).
+
+Based on the bit timings, this bus appears to be running at 10 Khz.
 
 # IoT Controller Design
 
